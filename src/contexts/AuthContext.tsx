@@ -1,86 +1,209 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '@/services/authService';
-import type { User } from '@/types';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { supabase } from "@/lib/supabase";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import type { User } from "@/types";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  register: (
+    name: string,
+    email: string,
+    phone: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
+const mapSupabaseUserToUser = (
+  supabaseUser: SupabaseUser,
+  dbUser?: any,
+): User => ({
+  id: supabaseUser.id,
+  name:
+    dbUser?.full_name ||
+    supabaseUser.user_metadata?.name ||
+    supabaseUser.email?.split("@")[0] ||
+    "User",
+  email: supabaseUser.email || "",
+  phone: dbUser?.phone || supabaseUser.user_metadata?.phone || undefined,
+  role: dbUser?.role || "user",
+});
+
+// Helper function to fetch user data from database
+const fetchUserData = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name, phone, role")
+      .eq("id", userId)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 is "not found"
+      console.warn("Error fetching user data:", error);
+    }
+
+    return data;
+  } catch (error) {
+    console.warn("Error fetching user data:", error);
+    return null;
+  }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const savedUser = localStorage.getItem(USER_KEY);
-    if (token && savedUser) {
+    // Get initial session
+
+    const getInitialSession = async () => {
+      console.log("Checking initial session...");
+      console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+      console.log(
+        "Supabase Anon Key exists:",
+        !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+      );
       try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        const { data, error } = await supabase.auth.getUser();
+        console.log("getUser result - data:", data, "error:", error);
+        if (error) {
+          console.error("Error in getUser:", error);
+          setIsLoading(false);
+          return;
+        }
+        console.log("Initial session:", data.user);
+        if (data.user) {
+          const dbUser = await fetchUserData(data.user.id);
+          setUser(mapSupabaseUserToUser(data.user, dbUser));
+        }
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Unexpected error in getInitialSession:", err);
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    getInitialSession();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const dbUser = await fetchUserData(session.user.id);
+        setUser(mapSupabaseUserToUser(session.user, dbUser));
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const response = await authService.login(email, password);
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      setUser(response.user);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const dbUser = await fetchUserData(data.user.id);
+        setUser(mapSupabaseUserToUser(data.user, dbUser));
+      }
+
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Login failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Login failed",
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (
+    name: string,
+    email: string,
+    phone: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const response = await authService.register(name, email, password);
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      setUser(response.user);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            phone,
+          },
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const dbUser = await fetchUserData(data.user.id);
+        setUser(mapSupabaseUserToUser(data.user, dbUser));
+      }
+
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Registration failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Registration failed",
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }

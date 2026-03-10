@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, Menu, ChevronDown, Phone, Facebook, Instagram, Youtube, X as XClose, Loader2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { CATEGORIES } from '@/data/categories';
 import { useSearch } from '@/hooks/useSearch';
 import { Button } from '@/components/ui/button';

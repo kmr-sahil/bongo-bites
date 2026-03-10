@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Bell, Heart } from 'lucide-react';
 import type { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { useAddToWishlist } from '@/hooks/useWishlist';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
