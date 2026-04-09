@@ -10,6 +10,8 @@ import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import PaymentStatus from "./pages/PaymentStatus";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
@@ -28,6 +30,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminProductForm from "./pages/admin/AdminProductForm";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminManualOrder from "./pages/admin/AdminManualOrder";
+import AdminPaymentSettings from "./pages/admin/AdminPaymentSettings";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +49,8 @@ const App = () => (
                 <Route path="/category/:categorySlug" element={<Shop />} />
                 <Route path="/product/:slug" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/payment-status" element={<PaymentStatus />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/account" element={<Account />} />
@@ -67,6 +72,7 @@ const App = () => (
                   <Route path="products/:id" element={<AdminProductForm />} />
                   <Route path="blog" element={<AdminBlog />} />
                   <Route path="manual-order" element={<AdminManualOrder />} />
+                  <Route path="payment-settings" element={<AdminPaymentSettings />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

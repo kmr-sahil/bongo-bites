@@ -88,10 +88,6 @@ export default function Header() {
     setSearchQuery("");
   }, [location.pathname]);
 
-  useEffect(() => {
-    console.log(showSearchResults, " ---- ", searchQuery.length);
-  }, [searchResults]);
-
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Our Story", path: "/our-story" },

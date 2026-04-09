@@ -6,10 +6,13 @@ import React, {
   ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { cartService } from "@/services/cartService";
 
 export interface CartItem {
   id: string;
   name: string;
+  slug?: string;
   price: number;
   originalPrice?: number;
   quantity: number;
@@ -19,10 +22,11 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
+  isLoading: boolean;
+  addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => Promise<void>;
+  removeFromCart: (id: string) => Promise<void>;
+  updateQuantity: (id: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   getCartTotal: () => number;
   getCartCount: () => number;
   isCartOpen: boolean;
@@ -31,65 +35,115 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "bongohridoy_cart";
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    if (savedCart) {
+    const loadCart = async () => {
+      if (authLoading) return;
+      if (!isAuthenticated) {
+        setItems([]);
+        return;
+      }
+
+      setIsLoading(true);
       try {
-        setItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Failed to parse cart from localStorage");
+        const backendItems = await cartService.getAll();
+        setItems(backendItems);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not load cart");
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, []);
+    };
 
-  // Save cart to localStorage on change
-  useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    loadCart();
+  }, [isAuthenticated, authLoading]);
 
-  const addToCart = (item: Omit<CartItem, "quantity">, quantity = 1) => {
-    setItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.id === item.id);
-      if (existingItem) {
-        toast.success(`Updated ${item.name} quantity in cart`);
-        return prevItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i,
-        );
-      }
-      toast.success(`${item.name} added to cart!`);
-      return [...prevItems, { ...item, quantity }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const removeFromCart = (id: string) => {
-    const item = items.find((i) => i.id === id);
-    setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-    if (item) {
-      toast.success(`${item.name} removed from cart`);
-    }
-  };
-
-  const updateQuantity = (id: string, quantity: number) => {
-    if (quantity < 1) {
-      removeFromCart(id);
+  const addToCart = async (item: Omit<CartItem, "quantity">, quantity = 1) => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to add items to cart");
       return;
     }
-    setItems((prevItems) =>
-      prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)),
-    );
+
+    try {
+      setIsLoading(true);
+      const updatedItems = await cartService.add(item.id, quantity);
+      const existedBefore = items.some((existing) => existing.id === item.id);
+      setItems(updatedItems);
+      toast.success(
+        existedBefore ? `Updated ${item.name} quantity in cart` : `${item.name} added to cart!`,
+      );
+      setIsCartOpen(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add item to cart");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const clearCart = () => {
-    setItems([]);
-    toast.success("Cart cleared");
+  const removeFromCart = async (id: string) => {
+    const item = items.find((i) => i.id === id);
+
+    if (!isAuthenticated) {
+      setItems((prevItems) => prevItems.filter((cartItem) => cartItem.id !== id));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const updatedItems = await cartService.remove(id);
+      setItems(updatedItems);
+      if (item) {
+        toast.success(`${item.name} removed from cart`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateQuantity = async (id: string, quantity: number) => {
+    if (quantity < 1) {
+      await removeFromCart(id);
+      return;
+    }
+
+    if (!isAuthenticated) return;
+
+    try {
+      setIsLoading(true);
+      const updatedItems = await cartService.updateQuantity(id, quantity);
+      setItems(updatedItems);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update quantity");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearCart = async () => {
+    if (!items.length) return;
+
+    if (!isAuthenticated) {
+      setItems([]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await Promise.all(items.map((item) => cartService.remove(item.id)));
+      setItems([]);
+      toast.success("Cart cleared");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not clear cart");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getCartTotal = () => {
@@ -107,6 +161,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         items,
+        isLoading,
         addToCart,
         removeFromCart,
         updateQuantity,

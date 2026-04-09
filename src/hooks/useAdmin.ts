@@ -3,6 +3,7 @@ import { adminService } from '@/services/adminService';
 import { orderService } from '@/services/orderService';
 import { wishlistService } from '@/services/wishlistService';
 import type { Product } from '@/types';
+import type { PaymentMethod } from '@/services/adminService';
 
 export function useDashboardStats() {
   return useQuery({
@@ -78,6 +79,34 @@ export function useUpdateOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+    },
+  });
+}
+
+// Payment Methods (Admin)
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: ['admin', 'payment-methods'],
+    queryFn: () => adminService.getPaymentMethods(),
+  });
+}
+
+// Public Payment Methods (for checkout - no auth required)
+export function usePublicPaymentMethods() {
+  return useQuery({
+    queryKey: ['payment-methods'],
+    queryFn: () => adminService.getPublicPaymentMethods(),
+  });
+}
+
+export function useTogglePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ payment_method, is_available }: { payment_method: string; is_available: boolean }) =>
+      adminService.togglePaymentMethod(payment_method, is_available),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payment-methods'] });
     },
   });
 }

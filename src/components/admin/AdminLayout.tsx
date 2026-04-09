@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   BookOpen,
   ShoppingCart,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { title: "Products", href: "/admin/products", icon: Package },
   { title: "Blog", href: "/admin/blog", icon: BookOpen },
   { title: "Manual Order", href: "/admin/manual-order", icon: ShoppingCart },
+  { title: "Payments", href: "/admin/payment-settings", icon: CreditCard },
 ];
 
 export function AdminLayout() {

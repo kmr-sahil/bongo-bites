@@ -1,25 +1,12 @@
-import { Link, redirect } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { useCreateOrder, useOrders } from "@/hooks/useOrders";
-import { useEffect, useState } from "react";
-import { useAddresses } from "@/hooks/useAddresses";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, getCartTotal, clearCart } =
     useCart();
-  const createOrder = useCreateOrder();
-  const { data: addresses, isLoading } = useAddresses();
-  const [selectedAddress, setSelectedAddress] = useState<string>("");
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -29,18 +16,26 @@ export default function Cart() {
     }).format(price);
   };
 
-  useEffect(() => {
-    if (addresses?.length) {
-      const defaultAddress = addresses.find((addr: any) => addr.is_default);
-      if (defaultAddress) {
-        setSelectedAddress(defaultAddress.id);
-      }
-    }
-  }, [addresses]);
-
   const subtotal = getCartTotal();
   const shipping = subtotal > 500 ? 0 : 50; // Free shipping above ₹500
   const total = subtotal + shipping;
+
+  const generateWhatsAppMessage = () => {
+    const itemsList = items
+      .map((i) => `• ${i.quantity}x ${i.name} - ₹${i.price * i.quantity}`)
+      .join("\n");
+    const message = `Hello! I would like to place an order from Bongo Bites.
+
+*Order Details:*
+${itemsList}
+
+*Subtotal:* ₹${subtotal}
+*Shipping:* ${shipping === 0 ? "FREE" : `₹${shipping}`}
+*Total:* ₹${total}
+
+Please confirm availability and let me know the delivery details. Thank you!`;
+    return encodeURIComponent(message);
+  };
 
   if (items.length === 0) {
     return (
@@ -173,32 +168,6 @@ export default function Cart() {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl border border-border p-6 sticky top-28">
-              <div className="my-4">
-                <label className="text-sm font-medium text-muted-foreground pl-1">Delivery Address</label>
-
-                <Select
-                  value={selectedAddress}
-                  onValueChange={setSelectedAddress}
-                >
-                  <SelectTrigger className="w-full mt-2">
-                    <SelectValue placeholder="Select delivery address" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {addresses?.map((addr: any) => (
-                      <SelectItem key={addr.id} value={addr.id}>
-                        {addr.name} - {addr.city}, {addr.state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {isLoading && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Loading addresses...
-                  </p>
-                )}
-              </div>
               <h2 className="font-display text-lg font-semibold mb-4">
                 Order Summary
               </h2>
@@ -229,24 +198,14 @@ export default function Cart() {
                 </div>
               </div>
 
-              <Button
-                size="lg"
-                className="w-full mt-6 touch-target"
-                onClick={() =>
-                  createOrder.mutate({
-                    address_id: selectedAddress,
-                    items: items.map((item) => ({
-                      product_id: item.id,
-                      quantity: item.quantity,
-                    })),
-                  })
-                }
-              >
-                Proceed to Checkout
-              </Button>
+              <Link to="/checkout">
+                <Button size="lg" className="w-full mt-6 touch-target">
+                  Proceed to Checkout
+                </Button>
+              </Link>
 
               <a
-                href={`https://wa.me/919330396636?text=Hi, I'd like to place an order for: ${items.map((i) => `${i.quantity}x ${i.name}`).join(", ")}`}
+                href={`https://wa.me/919330396636?text=${generateWhatsAppMessage()}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block mt-3"

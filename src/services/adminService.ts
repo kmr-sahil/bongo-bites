@@ -1,6 +1,22 @@
 import { apiClient } from "@/lib/apiClient";
 import type { Product, DashboardStats } from "@/types";
 
+export interface PaymentMethod {
+  id: number;
+  payment_method: string;
+  is_available: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Public payment method (returned by /checkout/payment-methods)
+export interface PublicPaymentMethod {
+  id: number;
+  payment_method: string;
+  notes: string | null;
+}
+
 export const adminService = {
   getDashboard: () => apiClient.get<DashboardStats>("/store/admin/dashboard"),
 
@@ -60,4 +76,18 @@ export const adminService = {
 
   deleteProductImage: (productId: string, imageId: string) =>
     apiClient.delete("/products/products/${productId}/images/${imageId}"),
+
+  // Payment Methods (Admin only)
+  getPaymentMethods: () =>
+    apiClient.get<PaymentMethod[]>("/store/admin/payment-methods"),
+
+  togglePaymentMethod: (payment_method: string, is_available: boolean) =>
+    apiClient.post<{ message: string; payment_method: PaymentMethod }>(
+      "/store/admin/payment/toggle",
+      { payment_method, is_available }
+    ),
+
+  // Public payment methods (for checkout)
+  getPublicPaymentMethods: () =>
+    apiClient.get<PublicPaymentMethod[]>("/checkout/payment-methods"),
 };
