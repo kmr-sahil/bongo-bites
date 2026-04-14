@@ -38,7 +38,7 @@ const STATUS_OPTIONS = [
 ];
 
 function StatusDropdown({ order }: { order: any }) {
-  const { mutate: updateOrder, isLoading } = useUpdateOrder();
+  const { mutate: updateOrder } = useUpdateOrder();
 
   const handleChange = (value: string) => {
     if (value === order.status) return;

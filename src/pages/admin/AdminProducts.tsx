@@ -17,9 +17,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil, Trash2, Eye, Loader2 } from "lucide-react";
 import type { Product, StockStatus } from "@/types";
 
+interface AdminProductsResponse {
+  data: AdminProductRow[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+type AdminProductRow = Product & {
+  category_name?: string;
+};
+
 export default function AdminProducts() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useAdminProducts(page);
+  const { data, isLoading } = useAdminProducts(page) as {
+    data?: AdminProductsResponse;
+    isLoading: boolean;
+  };
   const deleteProduct = useDeleteProduct();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -33,8 +47,9 @@ export default function AdminProducts() {
   >([]);
 
   useEffect(() => {
-    apiClient.get("/api/categories").then((res) => {
-      console.log(res);
+    apiClient
+      .get<{ id: string; name: string; slug: string }[]>("/api/categories")
+      .then((res) => {
       setCategories(res);
     });
   }, []);
@@ -49,8 +64,12 @@ export default function AdminProducts() {
     return matchesSearch && matchesCategory;
   });
 
-  const getStockStatus = (stock: string) =>
-    stock === "in-stock" ? "in-stock" : "out-of-stock";
+  const getStockStatus = (product: AdminProductRow): StockStatus => {
+    if (typeof product.stock === "number" && product.stock > 0) {
+      return "in-stock";
+    }
+    return product.stock_status === "upcoming" ? "upcoming" : "out-of-stock";
+  };
 
   const getStockBadge = (status: StockStatus) => {
     const config: Record<
@@ -162,7 +181,7 @@ export default function AdminProducts() {
                       ₹{product.sale_price || product.price}
                     </td>
                     <td className="py-3 px-4">
-                      {getStockBadge(getStockStatus(product.stock_status))}
+                      {getStockBadge(getStockStatus(product))}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">

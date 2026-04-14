@@ -8,6 +8,10 @@ export default function Cart() {
   const { items, updateQuantity, removeFromCart, getCartTotal, clearCart } =
     useCart();
 
+  const hasUnavailableItems = items.some(
+    (item) => Number(item.stock ?? 0) < 1 || item.quantity > Number(item.stock ?? 0),
+  );
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -125,6 +129,7 @@ Please confirm availability and let me know the delivery details. Thank you!`;
                         onClick={() =>
                           updateQuantity(item.id, item.quantity + 1)
                         }
+                        disabled={item.quantity >= Number(item.stock ?? 0)}
                         className="qty-btn"
                       >
                         <Plus className="h-4 w-4" />
@@ -142,6 +147,11 @@ Please confirm availability and let me know the delivery details. Thank you!`;
                       )}
                     </div>
                   </div>
+                  {(Number(item.stock ?? 0) < 1 || item.quantity > Number(item.stock ?? 0)) && (
+                    <p className="mt-2 text-sm text-destructive">
+                      This item is out of stock. Remove it to continue checkout.
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => removeFromCart(item.id)}
@@ -199,10 +209,20 @@ Please confirm availability and let me know the delivery details. Thank you!`;
               </div>
 
               <Link to="/checkout">
-                <Button size="lg" className="w-full mt-6 touch-target">
+                <Button
+                  size="lg"
+                  className="w-full mt-6 touch-target"
+                  disabled={hasUnavailableItems}
+                >
                   Proceed to Checkout
                 </Button>
               </Link>
+
+              {hasUnavailableItems && (
+                <p className="mt-3 text-xs text-destructive text-center">
+                  Remove out-of-stock items before checkout.
+                </p>
+              )}
 
               <a
                 href={`https://wa.me/919330396636?text=${generateWhatsAppMessage()}`}

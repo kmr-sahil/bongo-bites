@@ -64,7 +64,6 @@ export default function Shop() {
   const products = data?.data || [];
   const totalPages = data?.total_pages || 1;
 
-  console.log("Pages", page, "Total Pages:", totalPages);
 
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) =>

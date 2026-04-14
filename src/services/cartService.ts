@@ -7,6 +7,7 @@ interface BackendCartItem {
   slug: string;
   price: number;
   sale_price?: number;
+  stock: number;
   quantity: number;
   category_name: string;
   category_slug: string;
@@ -21,6 +22,7 @@ export interface CartServiceItem {
   price: number;
   originalPrice?: number;
   quantity: number;
+  stock: number;
   image: string;
   category: string;
 }
@@ -36,6 +38,7 @@ const toCartServiceItem = (item: BackendCartItem): CartServiceItem => {
     price: currentPrice,
     originalPrice,
     quantity: item.quantity,
+    stock: Number(item.stock ?? 0),
     image: item.images?.[0] ?? "",
     category: item.category_name,
   };

@@ -33,6 +33,11 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
 
+  interface NewsletterResponse {
+    code?: "ALREADY_SUBSCRIBED" | "RESUBSCRIBED" | string;
+    message?: string;
+  }
+
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -44,9 +49,15 @@ export default function Footer() {
     try {
       setIsSubscribing(true);
 
-      const res = await apiClient.post("/extras/newsletter", { email, source: "footer" });
+      const data = await apiClient.post<NewsletterResponse>("/extras/newsletter", {
+        email,
+        source: "footer",
+      });
 
-      const data = await res.json();
+      if (!data) {
+        toast.error("Failed to subscribe. Please try again later.");
+        throw new Error("Subscription failed");
+      }
 
 
       // 🎯 Handle different cases from backend
@@ -60,7 +71,9 @@ export default function Footer() {
 
       setEmail("");
     } catch (error) {
-      toast.error(error.message || "Failed to subscribe");
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to subscribe";
+      toast.error(errorMessage);
     } finally {
       setIsSubscribing(false);
     }

@@ -9,10 +9,10 @@ export function useSearch(query: string) {
   });
 }
 
-export function useDeliveryCheck(pincode: string) {
+export function useDeliveryCheck(pincode: string, productId: string) {
   return useQuery({
-    queryKey: ['delivery', pincode],
-    queryFn: () => searchService.checkDelivery(pincode),
-    enabled: pincode.length === 6,
+    queryKey: ['delivery', pincode, productId],
+    queryFn: () => searchService.checkDelivery(pincode, productId),
+    enabled: pincode.length === 6 && !!productId,
   });
 }

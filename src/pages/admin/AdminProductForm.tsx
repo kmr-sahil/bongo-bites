@@ -48,7 +48,9 @@ export default function AdminProductForm() {
   >([]);
 
   useEffect(() => {
-    apiClient.get("/api/categories").then((res) => setCategories(res));
+    apiClient
+      .get<{ id: string; name: string; slug: string }[]>("/api/categories")
+      .then((res) => setCategories(res));
   }, []);
 
   const [form, setForm] = useState({
@@ -82,7 +84,9 @@ export default function AdminProductForm() {
         weight: existingProduct.weight || "",
         size_or_dimensions: existingProduct.size_or_dimensions || "",
         stock_status: (existingProduct.stock_status ||
-          "in-stock") as StockStatus,
+          ((Number(existingProduct.stock) || 0) > 0
+            ? "in-stock"
+            : "out-of-stock")) as StockStatus,
         is_visible: existingProduct.is_visible ?? true,
         category_id: cat?.id || "",
         keywords: existingProduct.keywords?.join(", ") || "",

@@ -14,6 +14,7 @@ interface InitiateCheckoutPayload {
   payment_gateway: string;
   delivery_option_code?: string;
   delivery_charge?: number;
+  courier_company_id?: number | null;
 }
 
 export interface DeliveryOption {

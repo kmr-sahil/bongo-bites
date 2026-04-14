@@ -14,12 +14,7 @@ import { Lock, AlertCircle } from "lucide-react";
 export function AdminPasscodeGate({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuth();
 
-  console.log(
-    "AdminPasscodeGate - user:",
-    user,
-    "isAuthenticated:",
-    isAuthenticated,
-  );
+
 
   if (isAuthenticated && user?.role === "admin") {
     return <>{children}</>;

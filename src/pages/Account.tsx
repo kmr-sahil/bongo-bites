@@ -14,12 +14,7 @@ import { toast } from "sonner";
 
 export default function Account() {
   const { user, isAuthenticated, logout } = useAuth();
-  console.log(
-    "Account page - user:",
-    user,
-    "isAuthenticated:",
-    isAuthenticated,
-  );
+ 
   const navigate = useNavigate();
 
   if (!isAuthenticated) {

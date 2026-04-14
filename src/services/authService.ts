@@ -23,4 +23,16 @@ export const authService = {
       current_password: currentPassword,
       new_password: newPassword,
     }),
+
+  forgotPassword: (email: string) =>
+    apiClient.post<{ message: string }>("/api/auth/forgot-password", {
+      email,
+    }),
+
+  resetPassword: (email: string, otp: string, newPassword: string) =>
+    apiClient.post<{ message: string }>("/api/auth/reset-password", {
+      email,
+      otp,
+      newPassword,
+    }),
 };

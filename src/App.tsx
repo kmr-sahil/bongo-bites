@@ -14,6 +14,7 @@ import Checkout from "./pages/Checkout";
 import PaymentStatus from "./pages/PaymentStatus";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Account from "./pages/Account";
 import Profile from "./pages/account/Profile";
 import Orders from "./pages/account/Orders";
@@ -23,6 +24,10 @@ import Contact from "./pages/Contact";
 import Blogs from "./pages/Blogs";
 import BlogDetail from "./pages/BlogDetail";
 import OurStory from "./pages/OurStory";
+import Privacy from "./pages/Privacy";
+import TermsOfCondition from "./pages/TermsOfCondition";
+import ShippingPolicy from "./pages/ShippingPolicy";
+import ReturnAndRefundPolicy from "./pages/ReturnAndRefundPolicy";
 import NotFound from "./pages/NotFound";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -53,6 +58,7 @@ const App = () => (
                 <Route path="/payment-status" element={<PaymentStatus />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/account/profile" element={<Profile />} />
                 <Route path="/account/orders" element={<Orders />} />
@@ -62,6 +68,10 @@ const App = () => (
                 <Route path="/blogs" element={<Blogs />} />
                 <Route path="/blog/:slug" element={<BlogDetail />} />
                 <Route path="/our-story" element={<OurStory />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<TermsOfCondition />} />
+                <Route path="/shipping" element={<ShippingPolicy />} />
+                <Route path="/returns" element={<ReturnAndRefundPolicy />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLayout />}>

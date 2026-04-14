@@ -80,6 +80,15 @@ export default function Checkout() {
     [deliveryOptions, selectedDeliveryCode],
   );
 
+  const unavailableItems = useMemo(
+    () =>
+      items.filter(
+        (item) => Number(item.stock ?? 0) < 1 || item.quantity > Number(item.stock ?? 0),
+      ),
+    [items],
+  );
+  const hasUnavailableItems = unavailableItems.length > 0;
+
   const shipping = selectedDeliveryOption ? getDeliveryPrice(selectedDeliveryOption) : 0;
   const total = subtotal + shipping;
 
@@ -157,6 +166,11 @@ export default function Checkout() {
       return;
     }
 
+    if (hasUnavailableItems) {
+      toast.error("Remove out-of-stock items before placing order.");
+      return;
+    }
+
     try {
       setIsInitiating(true);
 
@@ -172,6 +186,7 @@ export default function Checkout() {
         payment_gateway: selectedPaymentGateway,
         delivery_option_code: selectedDeliveryCode,
         delivery_charge: shipping,
+        courier_company_id: selectedDeliveryOption?.courier_company_id || null,
       });
 
       // Handle COD orders - redirect to orders page
@@ -456,10 +471,21 @@ export default function Checkout() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium line-clamp-2">{item.name}</p>
                       <p className="text-xs text-muted-foreground mt-1">Qty: {item.quantity}</p>
+                      {(Number(item.stock ?? 0) < 1 || item.quantity > Number(item.stock ?? 0)) && (
+                        <p className="text-xs text-destructive mt-1">Out of stock</p>
+                      )}
                     </div>
                     <p className="font-semibold">{formatPrice(item.price * item.quantity)}</p>
                   </div>
                 ))}
+
+                {hasUnavailableItems && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3">
+                    <p className="text-xs text-destructive">
+                      Some cart items are out of stock. Remove them from cart before placing the order.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -510,6 +536,7 @@ export default function Checkout() {
                   disabled={
                     isInitiating ||
                     isDeliveryOptionsLoading ||
+                    hasUnavailableItems ||
                     !selectedAddress ||
                     !selectedPaymentGateway ||
                     !selectedDeliveryCode

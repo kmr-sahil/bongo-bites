@@ -45,7 +45,7 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [pincode, setPincode] = useState("");
   const { data: deliveryInfo, isLoading: checkingDelivery } =
-    useDeliveryCheck(pincode);
+    useDeliveryCheck(pincode, product?.id || "");
 
   // Fetch related products
   const { data: relatedData } = useProducts({
@@ -171,7 +171,7 @@ export default function ProductDetail() {
               to={`/category/${product.category_slug}`}
               className="breadcrumb-link"
             >
-              {product.category_name}
+              {product.category}
             </Link>
             <span>/</span>
             <span className="text-foreground line-clamp-1">{product.name}</span>
@@ -395,7 +395,7 @@ export default function ProductDetail() {
                   className={`text-sm mt-2 ${deliveryInfo.delivery_available ? "text-success" : "text-destructive"}`}
                 >
                   {deliveryInfo.delivery_available
-                    ? `✓ Delivery available – estimated ${deliveryInfo.delivery_time_days} day${deliveryInfo.delivery_time_days > 1 ? "s" : ""}`
+                    ? "✓ Delivery available for this pincode"
                     : "✗ Delivery not available in this area"}
                 </p>
               )}
